@@ -1,1 +1,49 @@
-Teste
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - master
+
+  workflow_dispatch:
+
+jobs:
+  build-job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: python3 -V
+      - name: Build
+        run: echo "Build realizada!"
+
+  test-job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: python3 app.py
+      - uses: AppThreat/sast-scan-action@master
+        with:
+          type: "python"
+
+  deploy-job:
+    needs: test-job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ferlitz/atividade:latest
+
+      - name: Deploy
+        run: echo "Deploy Realizada com Sucesso!"
